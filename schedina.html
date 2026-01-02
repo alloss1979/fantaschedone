@@ -14,19 +14,7 @@
 
 <hr>
 
-<h2>🎯 Gestione Lega</h2>
-
-<input id="nomeLega" placeholder="Nome lega">
-<button onclick="creaLega()">Crea lega</button>
-
-<br><br>
-
-<input id="codiceLega" placeholder="Codice lega">
-<button onclick="entraLega()">Entra in lega</button>
-
-<p id="legaAttiva"></p>
-
-<hr>
+<h2>Schedina – 13 Partite</h2>
 
 <div id="partite"></div>
 
@@ -36,22 +24,14 @@
 
 <hr>
 
-<h2>🏆 Classifica Lega</h2>
-<table border="1" cellpadding="5">
-  <tr><th>Utente</th><th>Punti</th></tr>
-  <tbody id="classificaLega"></tbody>
-</table>
-
-<hr>
-
-<h2>🌍 Classifica Generale</h2>
+<h2>🏆 Classifica Generale</h2>
 <table border="1" cellpadding="5">
   <tr><th>Utente</th><th>Punti</th></tr>
   <tbody id="classificaGenerale"></tbody>
 </table>
 
 <script>
-  // login
+  // controllo login
   var utente = localStorage.getItem("utente");
   if (!utente) location.href = "login.html";
 
@@ -68,69 +48,39 @@
   document.getElementById("crediti").innerText =
     "Crediti: " + getCrediti();
 
-  // risultati finti
-  var risultati = ["1","X","2","1","2","X","1","1","X","2","1","2","X"];
+  // PARTITE REALI (ESEMPIO SERIE A)
+  var partite = [
+    {casa:"Inter", trasferta:"Milan", risultato:"1"},
+    {casa:"Juventus", trasferta:"Roma", risultato:"X"},
+    {casa:"Napoli", trasferta:"Lazio", risultato:"2"},
+    {casa:"Atalanta", trasferta:"Bologna", risultato:"1"},
+    {casa:"Fiorentina", trasferta:"Torino", risultato:"X"},
+    {casa:"Genoa", trasferta:"Udinese", risultato:"2"},
+    {casa:"Lecce", trasferta:"Verona", risultato:"1"},
+    {casa:"Monza", trasferta:"Cagliari", risultato:"1"},
+    {casa:"Empoli", trasferta:"Sassuolo", risultato:"2"},
+    {casa:"Frosinone", trasferta:"Salernitana", risultato:"X"},
+    {casa:"Parma", trasferta:"Como", risultato:"1"},
+    {casa:"Venezia", trasferta:"Pisa", risultato:"2"},
+    {casa:"Palermo", trasferta:"Bari", risultato:"1"}
+  ];
 
-  // crea partite
+  // crea schedina
   var html = "";
-  for (let i = 1; i <= 13; i++) {
+  partite.forEach((p, i) => {
     html += `
       <p>
-        Partita ${i}:
+        <strong>${p.casa} - ${p.trasferta}</strong><br>
         <select id="p${i}">
-          <option>1</option>
-          <option>X</option>
-          <option>2</option>
+          <option value="1">1</option>
+          <option value="X">X</option>
+          <option value="2">2</option>
         </select>
       </p>
     `;
-  }
+  });
   document.getElementById("partite").innerHTML = html;
 
-  // LEGA
-  function creaLega() {
-    var nome = document.getElementById("nomeLega").value;
-    if (!nome) return alert("Inserisci nome lega");
-
-    var codice = "L" + Math.floor(Math.random() * 10000);
-    localStorage.setItem("lega_" + codice, JSON.stringify({
-      nome: nome,
-      membri: [utente],
-      punti: {}
-    }));
-
-    localStorage.setItem("lega_attiva_" + utente, codice);
-    mostraLega();
-  }
-
-  function entraLega() {
-    var codice = document.getElementById("codiceLega").value;
-    var lega = localStorage.getItem("lega_" + codice);
-
-    if (!lega) return alert("Lega non trovata");
-
-    lega = JSON.parse(lega);
-    if (!lega.membri.includes(utente)) {
-      lega.membri.push(utente);
-    }
-
-    localStorage.setItem("lega_" + codice, JSON.stringify(lega));
-    localStorage.setItem("lega_attiva_" + utente, codice);
-    mostraLega();
-  }
-
-  function mostraLega() {
-    var codice = localStorage.getItem("lega_attiva_" + utente);
-    if (!codice) return;
-
-    var lega = JSON.parse(localStorage.getItem("lega_" + codice));
-    document.getElementById("legaAttiva").innerText =
-      "Lega attiva: " + lega.nome + " (" + codice + ")";
-
-    aggiornaClassificaLega();
-  }
-
-  // GIOCA
   function giocaSchedina() {
     var crediti = getCrediti();
     if (crediti < 10) return alert("Crediti insufficienti");
@@ -138,41 +88,32 @@
     crediti -= 10;
     var punti = 0;
 
-    for (let i = 1; i <= 13; i++) {
-      let s = document.getElementById("p" + i);
-      if (s.value === risultati[i - 1]) {
+    partite.forEach((p, i) => {
+      var s = document.getElementById("p" + i);
+      if (s.value === p.risultato) {
         s.className = "giusto";
         punti++;
       } else {
         s.className = "sbagliato";
       }
-    }
+    });
 
     crediti += punti * 2;
     setCrediti(crediti);
+
+    var tot = parseInt(localStorage.getItem("punti_" + utente) || 0);
+    localStorage.setItem("punti_" + utente, tot + punti);
+
     document.getElementById("crediti").innerText =
       "Crediti: " + crediti;
-
-    // punti generali
-    var tg = parseInt(localStorage.getItem("punti_" + utente) || 0);
-    localStorage.setItem("punti_" + utente, tg + punti);
-
-    // punti lega
-    var codice = localStorage.getItem("lega_attiva_" + utente);
-    if (codice) {
-      var lega = JSON.parse(localStorage.getItem("lega_" + codice));
-      lega.punti[utente] = (lega.punti[utente] || 0) + punti;
-      localStorage.setItem("lega_" + codice, JSON.stringify(lega));
-    }
 
     document.getElementById("risultato").innerText =
       "Punti giornata: " + punti;
 
-    aggiornaClassificaGenerale();
-    aggiornaClassificaLega();
+    aggiornaClassifica();
   }
 
-  function aggiornaClassificaGenerale() {
+  function aggiornaClassifica() {
     var arr = [];
     for (let k in localStorage) {
       if (k.startsWith("punti_")) {
@@ -191,24 +132,7 @@
     document.getElementById("classificaGenerale").innerHTML = html;
   }
 
-  function aggiornaClassificaLega() {
-    var codice = localStorage.getItem("lega_attiva_" + utente);
-    if (!codice) return;
-
-    var lega = JSON.parse(localStorage.getItem("lega_" + codice));
-    var html = "";
-
-    Object.keys(lega.punti).sort((a,b) =>
-      lega.punti[b] - lega.punti[a]
-    ).forEach(u => {
-      html += `<tr><td>${u}</td><td>${lega.punti[u]}</td></tr>`;
-    });
-
-    document.getElementById("classificaLega").innerHTML = html;
-  }
-
-  mostraLega();
-  aggiornaClassificaGenerale();
+  aggiornaClassifica();
 </script>
 
 </body>
