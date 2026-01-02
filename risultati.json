@@ -1,5 +1,5 @@
 [
-  {"casa":"Inter","trasferta":"Milano","risultato":"1"},
+  {"casa":"Inter","trasferta":"Milan","risultato":"1"},
   {"casa":"Juventus","trasferta":"Roma","risultato":"X"},
   {"casa":"Napoli","trasferta":"Lazio","risultato":"2"},
   {"casa":"Atalanta","trasferta":"Bologna","risultato":"1"},
@@ -13,4 +13,5 @@
   {"casa":"Venezia","trasferta":"Pisa","risultato":"2"},
   {"casa":"Palermo","trasferta":"Bari","risultato":"1"}
 ]
+
 
