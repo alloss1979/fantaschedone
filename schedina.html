@@ -4,70 +4,44 @@
   <title>Fantaschedone</title>
   <link rel="stylesheet" href="css/stile.css">
 </head>
-
 <body>
 
 <h1>Fantaschedone</h1>
-
 <p id="utente"></p>
 <p id="crediti"></p>
 
-<hr>
-
-<h2>Schedina – 13 Partite</h2>
-
-<div id="partite"></div>
+<h2>Schedina</h2>
+<div id="partite">Caricamento...</div>
 
 <button onclick="giocaSchedina()">Invia schedina (-10 crediti)</button>
-
 <h2 id="risultato"></h2>
 
-<hr>
-
 <h2>🏆 Classifica Generale</h2>
-<table border="1" cellpadding="5">
+<table border="1">
   <tr><th>Utente</th><th>Punti</th></tr>
   <tbody id="classificaGenerale"></tbody>
 </table>
 
 <script>
-  // controllo login
-  var utente = localStorage.getItem("utente");
-  if (!utente) location.href = "login.html";
+let utente = localStorage.getItem("utente");
+if (!utente) location.href = "login.html";
 
-  document.getElementById("utente").innerText = "Utente: " + utente;
+document.getElementById("utente").innerText = "Utente: " + utente;
 
-  function getCrediti() {
-    return parseInt(localStorage.getItem("crediti_" + utente));
-  }
+function getCrediti(){ return parseInt(localStorage.getItem("crediti_"+utente)); }
+function setCrediti(v){ localStorage.setItem("crediti_"+utente,v); }
 
-  function setCrediti(v) {
-    localStorage.setItem("crediti_" + utente, v);
-  }
+document.getElementById("crediti").innerText = "Crediti: " + getCrediti();
 
-  document.getElementById("crediti").innerText =
-    "Crediti: " + getCrediti();
+let partite = [];
 
-  // PARTITE REALI (ESEMPIO SERIE A)
-  var partite = [
-    {casa:"Inter", trasferta:"Milan", risultato:"1"},
-    {casa:"Juventus", trasferta:"Roma", risultato:"X"},
-    {casa:"Napoli", trasferta:"Lazio", risultato:"2"},
-    {casa:"Atalanta", trasferta:"Bologna", risultato:"1"},
-    {casa:"Fiorentina", trasferta:"Torino", risultato:"X"},
-    {casa:"Genoa", trasferta:"Udinese", risultato:"2"},
-    {casa:"Lecce", trasferta:"Verona", risultato:"1"},
-    {casa:"Monza", trasferta:"Cagliari", risultato:"1"},
-    {casa:"Empoli", trasferta:"Sassuolo", risultato:"2"},
-    {casa:"Frosinone", trasferta:"Salernitana", risultato:"X"},
-    {casa:"Parma", trasferta:"Como", risultato:"1"},
-    {casa:"Venezia", trasferta:"Pisa", risultato:"2"},
-    {casa:"Palermo", trasferta:"Bari", risultato:"1"}
-  ];
-
-  // crea schedina
-  var html = "";
-  partite.forEach((p, i) => {
+// 🔥 CARICA RISULTATI AUTOMATICI
+fetch("risultati.json")
+.then(r => r.json())
+.then(data => {
+  partite = data;
+  let html = "";
+  partite.forEach((p,i)=>{
     html += `
       <p>
         <strong>${p.casa} - ${p.trasferta}</strong><br>
@@ -80,59 +54,50 @@
     `;
   });
   document.getElementById("partite").innerHTML = html;
+});
 
-  function giocaSchedina() {
-    var crediti = getCrediti();
-    if (crediti < 10) return alert("Crediti insufficienti");
+function giocaSchedina(){
+  let crediti = getCrediti();
+  if (crediti < 10) return alert("Crediti insufficienti");
 
-    crediti -= 10;
-    var punti = 0;
+  crediti -= 10;
+  let punti = 0;
 
-    partite.forEach((p, i) => {
-      var s = document.getElementById("p" + i);
-      if (s.value === p.risultato) {
-        s.className = "giusto";
-        punti++;
-      } else {
-        s.className = "sbagliato";
-      }
-    });
-
-    crediti += punti * 2;
-    setCrediti(crediti);
-
-    var tot = parseInt(localStorage.getItem("punti_" + utente) || 0);
-    localStorage.setItem("punti_" + utente, tot + punti);
-
-    document.getElementById("crediti").innerText =
-      "Crediti: " + crediti;
-
-    document.getElementById("risultato").innerText =
-      "Punti giornata: " + punti;
-
-    aggiornaClassifica();
-  }
-
-  function aggiornaClassifica() {
-    var arr = [];
-    for (let k in localStorage) {
-      if (k.startsWith("punti_")) {
-        arr.push({
-          u: k.replace("punti_", ""),
-          p: parseInt(localStorage.getItem(k))
-        });
-      }
+  partite.forEach((p,i)=>{
+    let s = document.getElementById("p"+i);
+    if (s.value === p.risultato){
+      s.className = "giusto";
+      punti++;
+    } else {
+      s.className = "sbagliato";
     }
-    arr.sort((a,b) => b.p - a.p);
+  });
 
-    var html = "";
-    arr.forEach(x => {
-      html += `<tr><td>${x.u}</td><td>${x.p}</td></tr>`;
-    });
-    document.getElementById("classificaGenerale").innerHTML = html;
-  }
+  crediti += punti * 2;
+  setCrediti(crediti);
+
+  let tot = parseInt(localStorage.getItem("punti_"+utente) || 0);
+  localStorage.setItem("punti_"+utente, tot + punti);
+
+  document.getElementById("crediti").innerText = "Crediti: " + crediti;
+  document.getElementById("risultato").innerText = "Punti giornata: " + punti;
 
   aggiornaClassifica();
+}
+
+function aggiornaClassifica(){
+  let arr=[];
+  for(let k in localStorage){
+    if(k.startsWith("punti_")){
+      arr.push({u:k.replace("punti_",""),p:parseInt(localStorage.getItem(k))});
+    }
+  }
+  arr.sort((a,b)=>b.p-a.p);
+  let h="";
+  arr.forEach(x=>h+=`<tr><td>${x.u}</td><td>${x.p}</td></tr>`);
+  document.getElementById("classificaGenerale").innerHTML=h;
+}
+aggiornaClassifica();
 </script>
 
 </body>

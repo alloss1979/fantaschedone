@@ -1,0 +1,15 @@
+[
+  {"casa":"Inter","trasferta":"Milan","risultato":"1"},
+  {"casa":"Juventus","trasferta":"Roma","risultato":"X"},
+  {"casa":"Napoli","trasferta":"Lazio","risultato":"2"},
+  {"casa":"Atalanta","trasferta":"Bologna","risultato":"1"},
+  {"casa":"Fiorentina","trasferta":"Torino","risultato":"X"},
+  {"casa":"Genoa","trasferta":"Udinese","risultato":"2"},
+  {"casa":"Lecce","trasferta":"Verona","risultato":"1"},
+  {"casa":"Monza","trasferta":"Cagliari","risultato":"1"},
+  {"casa":"Empoli","trasferta":"Sassuolo","risultato":"2"},
+  {"casa":"Frosinone","trasferta":"Salernitana","risultato":"X"},
+  {"casa":"Parma","trasferta":"Como","risultato":"1"},
+  {"casa":"Venezia","trasferta":"Pisa","risultato":"2"},
+  {"casa":"Palermo","trasferta":"Bari","risultato":"1"}
+]
