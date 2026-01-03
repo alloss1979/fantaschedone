@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Classifica</title>
+  <link rel="stylesheet" href="css/stile.css">
+</head>
+<body>
+
+<h2>🏆 Classifica Generale</h2>
+
+<table>
+  <tr><th>Utente</th><th>Punti</th></tr>
+  <tbody id="classifica"></tbody>
+</table>
+
+<script>
+let h="";
+for(let k in localStorage){
+  if(k.startsWith("punti_")){
+    h+=`<tr>
+      <td>${k.replace("punti_","")}</td>
+      <td>${localStorage.getItem(k)}</td>
+    </tr>`;
+  }
+}
+document.getElementById("classifica").innerHTML=h;
+</script>
+
+</body>
+</html>

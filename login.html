@@ -1,42 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login Fantaschedone</title>
+  <title>Login – Fantaschedone</title>
+  <link rel="stylesheet" href="css/stile.css">
 </head>
-
 <body>
 
-<h1>Login Fantaschedone</h1>
+<h2>Login</h2>
 
-<p>
-  Nickname:<br>
-  <input type="text" id="nick">
-</p>
-
+<input id="nome" placeholder="Nickname">
+<br><br>
 <button onclick="login()">Entra</button>
 
-<p id="errore" style="color:red;"></p>
-
 <script>
-  function login() {
-    var nick = document.getElementById("nick").value.trim();
-
-    if (nick === "") {
-      document.getElementById("errore").innerText =
-        "Inserisci un nickname";
-      return;
-    }
-
-    // salva utente
-    localStorage.setItem("utente", nick);
-
-    // inizializza crediti se nuovo
-    if (localStorage.getItem("crediti_" + nick) === null) {
-      localStorage.setItem("crediti_" + nick, 100);
-    }
-
-    window.location.href = "schedina.html";
+function login(){
+  let n = document.getElementById("nome").value;
+  if(!n) return alert("Inserisci nome");
+  localStorage.setItem("utente", n);
+  if(!localStorage.getItem("crediti_"+n)){
+    localStorage.setItem("crediti_"+n, 100);
+    localStorage.setItem("punti_"+n, 0);
   }
+  location.href="schedina.html";
+}
 </script>
 
 </body>
