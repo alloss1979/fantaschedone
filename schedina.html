@@ -7,20 +7,36 @@
 <body>
 
 <h1>Fantaschedone</h1>
+
 <p id="utente"></p>
 <p id="crediti"></p>
 
-<h2>Schedina</h2>
-<div id="partite">Caricamento...</div>
+<hr>
 
-<button onclick="giocaSchedina()">Invia schedina (-10 crediti)</button>
-<h2 id="risultato"></h2>
+<h2>Seleziona giornata</h2>
+<select id="giornataSelect" onchange="caricaGiornata()">
+  <option value="">-- scegli --</option>
+  <option value="giornata1.json">Giornata 1</option>
+  <option value="giornata2.json">Giornata 2</option>
+</select>
 
-<h2>🏆 Classifica Generale</h2>
-<table border="1">
-  <tr><th>Utente</th><th>Punti</th></tr>
-  <tbody id="classificaGenerale"></tbody>
+<p id="infoBlocco"></p>
+
+<table border="1" cellpadding="8">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Partita</th>
+      <th>Pronostico</th>
+    </tr>
+  </thead>
+  <tbody id="tabella">
+    <tr><td colspan="3">Seleziona una giornata</td></tr>
+  </tbody>
 </table>
+
+<br>
+<button id="btnInvia" onclick="gioca()">Invia schedina</button>
 
 <script>
 let utente = localStorage.getItem("utente");
@@ -29,75 +45,60 @@ if (!utente) location.href = "login.html";
 document.getElementById("utente").innerText = "Utente: " + utente;
 
 function getCrediti(){ return parseInt(localStorage.getItem("crediti_"+utente)); }
-function setCrediti(v){ localStorage.setItem("crediti_"+utente,v); }
-
 document.getElementById("crediti").innerText = "Crediti: " + getCrediti();
 
-let partite = [];
+let giornata = null;
 
-// 🔥 CARICA RISULTATI AUTOMATICI
-fetch("risultati.json")
-.then(r => r.json())
-.then(data => {
-  partite = data;
+function caricaGiornata(){
+  let file = document.getElementById("giornataSelect").value;
+  if(!file) return;
+
+  fetch(file)
+  .then(r=>r.json())
+  .then(data=>{
+    giornata = data;
+    mostraGiornata();
+  });
+}
+
+function mostraGiornata(){
   let html = "";
-  partite.forEach((p,i)=>{
+  giornata.partite.forEach((p,i)=>{
     html += `
-      <p>
-        <strong>${p.casa} - ${p.trasferta}</strong><br>
-        <select id="p${i}">
-          <option value="1">1</option>
-          <option value="X">X</option>
-          <option value="2">2</option>
-        </select>
-      </p>
+      <tr>
+        <td>${i+1}</td>
+        <td>${p.casa} - ${p.trasferta}</td>
+        <td>
+          <input type="radio" name="p${i}" value="1">1
+          <input type="radio" name="p${i}" value="X">X
+          <input type="radio" name="p${i}" value="2">2
+        </td>
+      </tr>
     `;
   });
-  document.getElementById("partite").innerHTML = html;
-});
+  document.getElementById("tabella").innerHTML = html;
 
-function giocaSchedina(){
-  let crediti = getCrediti();
-  if (crediti < 10) return alert("Crediti insufficienti");
-
-  crediti -= 10;
-  let punti = 0;
-
-  partite.forEach((p,i)=>{
-    let s = document.getElementById("p"+i);
-    if (s.value === p.risultato){
-      s.className = "giusto";
-      punti++;
-    } else {
-      s.className = "sbagliato";
-    }
-  });
-
-  crediti += punti * 2;
-  setCrediti(crediti);
-
-  let tot = parseInt(localStorage.getItem("punti_"+utente) || 0);
-  localStorage.setItem("punti_"+utente, tot + punti);
-
-  document.getElementById("crediti").innerText = "Crediti: " + crediti;
-  document.getElementById("risultato").innerText = "Punti giornata: " + punti;
-
-  aggiornaClassifica();
+  controllaBlocco();
 }
 
-function aggiornaClassifica(){
-  let arr=[];
-  for(let k in localStorage){
-    if(k.startsWith("punti_")){
-      arr.push({u:k.replace("punti_",""),p:parseInt(localStorage.getItem(k))});
-    }
+function controllaBlocco(){
+  let ora = new Date();
+  let blocco = new Date(giornata.blocco);
+
+  if(ora >= blocco){
+    document.getElementById("infoBlocco").innerText =
+      "⛔ Giornata bloccata";
+    document.getElementById("btnInvia").disabled = true;
+  } else {
+    document.getElementById("infoBlocco").innerText =
+      "⏰ Blocco schedina: " + blocco.toLocaleString();
+    document.getElementById("btnInvia").disabled = false;
   }
-  arr.sort((a,b)=>b.p-a.p);
-  let h="";
-  arr.forEach(x=>h+=`<tr><td>${x.u}</td><td>${x.p}</td></tr>`);
-  document.getElementById("classificaGenerale").innerHTML=h;
 }
-aggiornaClassifica();
+
+function gioca(){
+  alert("Schedina salvata (logica completa nel prossimo step)");
+}
 </script>
 
 </body>

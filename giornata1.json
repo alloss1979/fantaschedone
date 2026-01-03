@@ -1,0 +1,11 @@
+{
+  "nome": "Giornata 1",
+  "blocco": "2026-01-10T15:00",
+  "partite": [
+    {"casa":"Inter","trasferta":"Milan"},
+    {"casa":"Juventus","trasferta":"Roma"},
+    {"casa":"Napoli","trasferta":"Lazio"},
+    {"casa":"Atalanta","trasferta":"Bologna"},
+    {"casa":"Fiorentina","trasferta":"Torino"}
+  ]
+}

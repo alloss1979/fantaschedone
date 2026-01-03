@@ -1,0 +1,11 @@
+{
+  "nome": "Giornata 2",
+  "blocco": "2026-01-17T15:00",
+  "partite": [
+    {"casa":"Milan","trasferta":"Juventus"},
+    {"casa":"Roma","trasferta":"Napoli"},
+    {"casa":"Lazio","trasferta":"Inter"},
+    {"casa":"Bologna","trasferta":"Fiorentina"},
+    {"casa":"Torino","trasferta":"Atalanta"}
+  ]
+}
