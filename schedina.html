@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Schedina – Fantaschedone</title>
+  <title>Fantaschedone</title>
   <link rel="stylesheet" href="css/stile.css">
 </head>
 <body>
 
-<h2>Schedina</h2>
+<h2>Fantaschedone – Schedina</h2>
 
 <p id="utente"></p>
 <p id="crediti"></p>
 
-<select id="giornata" onchange="carica()">
+<select id="giornataSel" onchange="caricaGiornata()">
   <option value="">Seleziona giornata</option>
   <option value="giornata1.json">Giornata 1</option>
   <option value="giornata2.json">Giornata 2</option>
 </select>
 
-<p id="blocco"></p>
+<p id="info"></p>
 
 <table>
   <thead>
@@ -25,41 +25,50 @@
       <th>#</th>
       <th>Partita</th>
       <th>Pronostico</th>
+      <th>Risultato</th>
     </tr>
   </thead>
-  <tbody id="partite"></tbody>
+  <tbody id="tabella"></tbody>
 </table>
 
 <br>
-<button id="gioca" onclick="gioca()">Invia schedina</button>
+<button id="btnGioca" onclick="gioca()">Invia schedina</button>
+
+<h3 id="esito"></h3>
 
 <script>
-let u = localStorage.getItem("utente");
-if(!u) location.href="login.html";
+let utente = localStorage.getItem("utente");
+if(!utente) location.href="login.html";
 
-document.getElementById("utente").innerText="Utente: "+u;
-document.getElementById("crediti").innerText=
-  "Crediti: "+localStorage.getItem("crediti_"+u);
+document.getElementById("utente").innerText = "Utente: "+utente;
 
-let giornata;
+let creditiKey = "crediti_"+utente;
+let puntiKey = "punti_"+utente;
 
-function carica(){
-  let f=document.getElementById("giornata").value;
-  fetch(f).then(r=>r.json()).then(d=>{
+document.getElementById("crediti").innerText =
+  "Crediti: "+localStorage.getItem(creditiKey);
+
+let giornata = null;
+
+function caricaGiornata(){
+  fetch(document.getElementById("giornataSel").value)
+  .then(r=>r.json())
+  .then(d=>{
     giornata=d;
-    mostra();
+    disegna();
   });
 }
 
-function mostra(){
+function disegna(){
   let ora=new Date();
   let blocco=new Date(giornata.blocco);
-  document.getElementById("blocco").innerText=
-    "Blocco: "+blocco.toLocaleString();
 
-  if(ora>=blocco){
-    document.getElementById("gioca").disabled=true;
-  }
+  let chiusa = ora >= blocco;
+
+  document.getElementById("info").innerText =
+    chiusa ? "⛔ Giornata chiusa" : "⏰ Blocco: "+blocco.toLocaleString();
+
+  document.getElementById("btnGioca").disabled = chiusa;
 
   let h="";
   giornata.partite.forEach((p,i)=>{
@@ -72,13 +81,33 @@ function mostra(){
           <input type="radio" name="p${i}" value="X">X
           <input type="radio" name="p${i}" value="2">2
         </td>
+        <td class="ris">-</td>
       </tr>`;
   });
-  document.getElementById("partite").innerHTML=h;
+  document.getElementById("tabella").innerHTML=h;
 }
 
 function gioca(){
-  alert("Schedina salvata (punteggi nel prossimo step)");
+  let punti=0;
+
+  giornata.partite.forEach((p,i)=>{
+    let scelto = document.querySelector(`input[name="p${i}"]:checked`);
+    let cella = document.getElementsByClassName("ris")[i];
+    cella.innerText = p.risultato;
+
+    if(scelto && scelto.value === p.risultato){
+      punti++;
+      cella.style.background="#b7f7b7";
+    } else {
+      cella.style.background="#f7b7b7";
+    }
+  });
+
+  let tot = parseInt(localStorage.getItem(puntiKey) || 0);
+  localStorage.setItem(puntiKey, tot + punti);
+
+  document.getElementById("esito").innerText =
+    "Punti giornata: "+punti;
 }
 </script>
 
