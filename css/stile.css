@@ -1,19 +1,116 @@
+/* RESET */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* BASE */
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  color: #222;
+  padding: 15px;
   text-align: center;
 }
 
-table {
-  margin:auto;
-  border-collapse: collapse;
+h1, h2, h3 {
+  margin: 15px 0;
 }
 
-td,th {
-  border:1px solid #333;
-  padding:8px;
+/* CARD */
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 15px auto;
+  max-width: 600px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* BUTTONS */
+button, select, input {
+  font-size: 16px;
+  padding: 10px;
+  margin: 8px 0;
+  width: 100%;
+  max-width: 300px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background: #1e7f34;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #999;
+}
+
+/* MENU */
 .menu a {
-  margin: 10px;
-  display:inline-block;
+  display: block;
+  background: #1e7f34;
+  color: white;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 10px auto;
+  max-width: 300px;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  max-width: 700px;
+  margin: 15px auto;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: #1e7f34;
+  color: white;
+}
+
+td, th {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+}
+
+/* PRONOSTICI */
+td input[type=radio] {
+  transform: scale(1.2);
+  margin: 0 5px;
+}
+
+/* RISULTATI */
+.ris {
+  font-weight: bold;
+}
+
+/* FEEDBACK */
+.success {
+  background: #b7f7b7 !important;
+}
+
+.error {
+  background: #f7b7b7 !important;
+}
+
+/* MOBILE EXTRA */
+@media (max-width: 600px) {
+  table, td, th {
+    font-size: 12px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
 }
