@@ -1,29 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Classifica</title>
+  <title>Classifica – Fantaschedone</title>
   <link rel="stylesheet" href="css/stile.css">
 </head>
 <body>
 
-<h2>🏆 Classifica Generale</h2>
+<h2 id="titolo"></h2>
 
 <table>
   <tr><th>Utente</th><th>Punti</th></tr>
-  <tbody id="classifica"></tbody>
+  <tbody id="tabella"></tbody>
 </table>
 
 <script>
-let h="";
-for(let k in localStorage){
-  if(k.startsWith("punti_")){
-    h+=`<tr>
-      <td>${k.replace("punti_","")}</td>
-      <td>${localStorage.getItem(k)}</td>
-    </tr>`;
+let params = new URLSearchParams(location.search);
+let codice = params.get("lega");
+
+let titolo = "🏆 Classifica Generale";
+let utenti = [];
+
+if(codice){
+  let lega = JSON.parse(localStorage.getItem("lega_"+codice));
+  titolo = "🏟️ "+lega.nome;
+  utenti = lega.membri;
+} else {
+  for(let k in localStorage){
+    if(k.startsWith("punti_")){
+      utenti.push(k.replace("punti_",""));
+    }
   }
 }
-document.getElementById("classifica").innerHTML=h;
+
+document.getElementById("titolo").innerText = titolo;
+
+let arr=[];
+utenti.forEach(u=>{
+  arr.push({
+    nome:u,
+    punti: parseInt(localStorage.getItem("punti_"+u) || 0)
+  });
+});
+
+arr.sort((a,b)=>b.punti-a.punti);
+
+let h="";
+arr.forEach(x=>{
+  h+=`<tr><td>${x.nome}</td><td>${x.punti}</td></tr>`;
+});
+
+document.getElementById("tabella").innerHTML=h;
 </script>
 
 </body>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leghe – Fantaschedone</title>
+  <link rel="stylesheet" href="css/stile.css">
+</head>
+<body>
+
+<h2>🏟️ Leghe private</h2>
+
+<p id="utente"></p>
+
+<hr>
+
+<h3>Crea una lega</h3>
+<input id="nomeLega" placeholder="Nome lega">
+<br><br>
+<button onclick="creaLega()">Crea</button>
+
+<p id="codiceCreato"></p>
+
+<hr>
+
+<h3>Entra in una lega</h3>
+<input id="codiceInput" placeholder="Codice lega">
+<br><br>
+<button onclick="entraLega()">Entra</button>
+
+<hr>
+
+<h3>Le mie leghe</h3>
+<ul id="listaLeghe"></ul>
+
+<script>
+let u = localStorage.getItem("utente");
+if(!u) location.href="login.html";
+
+document.getElementById("utente").innerText="Utente: "+u;
+
+function generaCodice(){
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+function creaLega(){
+  let nome = document.getElementById("nomeLega").value;
+  if(!nome) return alert("Inserisci nome lega");
+
+  let codice = generaCodice();
+  let lega = {
+    nome: nome,
+    codice: codice,
+    membri: [u]
+  };
+
+  localStorage.setItem("lega_"+codice, JSON.stringify(lega));
+  aggiungiLegaUtente(codice);
+
+  document.getElementById("codiceCreato").innerText =
+    "Codice lega: " + codice;
+
+  mostraLeghe();
+}
+
+function entraLega(){
+  let codice = document.getElementById("codiceInput").value.toUpperCase();
+  let lega = localStorage.getItem("lega_"+codice);
+  if(!lega) return alert("Lega non trovata");
+
+  lega = JSON.parse(lega);
+  if(!lega.membri.includes(u)){
+    lega.membri.push(u);
+    localStorage.setItem("lega_"+codice, JSON.stringify(lega));
+  }
+
+  aggiungiLegaUtente(codice);
+  mostraLeghe();
+}
+
+function aggiungiLegaUtente(codice){
+  let key="leghe_"+u;
+  let arr=JSON.parse(localStorage.getItem(key) || "[]");
+  if(!arr.includes(codice)){
+    arr.push(codice);
+    localStorage.setItem(key, JSON.stringify(arr));
+  }
+}
+
+function mostraLeghe(){
+  let arr=JSON.parse(localStorage.getItem("leghe_"+u) || "[]");
+  let h="";
+  arr.forEach(c=>{
+    let lega=JSON.parse(localStorage.getItem("lega_"+c));
+    h+=`<li>
+      ${lega.nome} (${c})
+      <a href="classifica.html?lega=${c}">Classifica</a>
+    </li>`;
+  });
+  document.getElementById("listaLeghe").innerHTML=h;
+}
+
+mostraLeghe();
+</script>
+
+</body>
+</html>
