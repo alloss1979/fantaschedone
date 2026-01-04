@@ -1,80 +1,124 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-  <title>Fantaschedone</title>
+  <meta charset="UTF-8">
+  <title>Fantaschedone – Schedina</title>
   <link rel="stylesheet" href="css/stile.css">
 </head>
 <body>
 
-<h2>Fantaschedone – Schedina</h2>
+<div class="card">
 
-<p id="utente"></p>
-<p id="crediti"></p>
+  <h2>⚽ Fantaschedone</h2>
 
-<select id="giornataSel" onchange="caricaGiornata()">
-  <option value="">Seleziona giornata</option>
-  <option value="giornata1.json">Giornata 1</option>
-  <option value="giornata2.json">Giornata 2</option>
-</select>
+  <p id="utente"></p>
+  <p id="crediti"></p>
+  <p id="info"></p>
 
-<p id="info"></p>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Partita</th>
+        <th>Pronostico</th>
+        <th>Risultato</th>
+      </tr>
+    </thead>
+    <tbody id="tabella">
+      <tr><td colspan="4">Caricamento partite...</td></tr>
+    </tbody>
+  </table>
 
-<table>
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Partita</th>
-      <th>Pronostico</th>
-      <th>Risultato</th>
-    </tr>
-  </thead>
-  <tbody id="tabella"></tbody>
-</table>
+  <br>
+  <button id="btnGioca" onclick="gioca()">Invia schedina</button>
 
-<br>
-<button id="btnGioca" onclick="gioca()">Invia schedina</button>
+  <h3 id="esito"></h3>
 
-<h3 id="esito"></h3>
+</div>
 
 <script>
+/* ==========================
+   CONTROLLO LOGIN
+========================== */
 let utente = localStorage.getItem("utente");
-if(!utente) location.href="login.html";
-
-document.getElementById("utente").innerText = "Utente: "+utente;
-
-let creditiKey = "crediti_"+utente;
-let puntiKey = "punti_"+utente;
-
-document.getElementById("crediti").innerText =
-  "Crediti: "+localStorage.getItem(creditiKey);
-
-let giornata = null;
-
-function caricaGiornata(){
-  fetch(document.getElementById("giornataSel").value)
-  .then(r=>r.json())
-  .then(d=>{
-    giornata=d;
-    disegna();
-  });
+if (!utente) {
+  location.href = "login.html";
 }
 
-function disegna(){
-  let ora=new Date();
-  let blocco=new Date(giornata.blocco);
+document.getElementById("utente").innerText = "👤 Utente: " + utente;
 
+let creditiKey = "crediti_" + utente;
+let puntiKey   = "punti_" + utente;
+
+if (!localStorage.getItem(creditiKey)) {
+  localStorage.setItem(creditiKey, 100);
+}
+
+document.getElementById("crediti").innerText =
+  "💰 Crediti: " + localStorage.getItem(creditiKey);
+
+/* ==========================
+   CONFIGURAZIONE GIORNATA
+========================== */
+const BLOCCO_GIORNATA = "2026-01-10T15:00"; // ORA BLOCCO
+const DATA_PARTITE   = "2026-01-10";       // DATA API
+const API_KEY = "40e94a409232598ba1cfd36efe3ad91d"; // API-Football
+
+let partite = [];
+
+/* ==========================
+   CARICAMENTO PARTITE REALI
+========================== */
+async function caricaPartite() {
+
+  const url = `https://v3.football.api-sports.io/fixtures?league=135&season=2025&date=${DATA_PARTITE}`;
+
+  const r = await fetch(url, {
+    headers: { "x-apisports-key": API_KEY }
+  });
+
+  const json = await r.json();
+
+  partite = json.response.map(f => {
+    let g1 = f.goals.home;
+    let g2 = f.goals.away;
+
+    let segno = "-";
+    if (g1 !== null) {
+      if (g1 > g2) segno = "1";
+      else if (g1 < g2) segno = "2";
+      else segno = "X";
+    }
+
+    return {
+      casa: f.teams.home.name,
+      trasferta: f.teams.away.name,
+      risultato: segno
+    };
+  });
+
+  disegnaTabella();
+}
+
+/* ==========================
+   DISEGNA TABELLA
+========================== */
+function disegnaTabella() {
+
+  let ora = new Date();
+  let blocco = new Date(BLOCCO_GIORNATA);
   let chiusa = ora >= blocco;
 
   document.getElementById("info").innerText =
-    chiusa ? "⛔ Giornata chiusa" : "⏰ Blocco: "+blocco.toLocaleString();
+    chiusa ? "⛔ Giornata chiusa" : "⏰ Blocco: " + blocco.toLocaleString();
 
   document.getElementById("btnGioca").disabled = chiusa;
 
-  let h="";
-  giornata.partite.forEach((p,i)=>{
-    h+=`
+  let h = "";
+  partite.forEach((p, i) => {
+    h += `
       <tr>
-        <td>${i+1}</td>
+        <td>${i + 1}</td>
         <td>${p.casa} - ${p.trasferta}</td>
         <td>
           <input type="radio" name="p${i}" value="1">1
@@ -82,24 +126,31 @@ function disegna(){
           <input type="radio" name="p${i}" value="2">2
         </td>
         <td class="ris">-</td>
-      </tr>`;
+      </tr>
+    `;
   });
-  document.getElementById("tabella").innerHTML=h;
+
+  document.getElementById("tabella").innerHTML = h;
 }
 
-function gioca(){
-  let punti=0;
+/* ==========================
+   INVIO SCHEDINA
+========================== */
+function gioca() {
 
-  giornata.partite.forEach((p,i)=>{
+  let punti = 0;
+
+  partite.forEach((p, i) => {
     let scelto = document.querySelector(`input[name="p${i}"]:checked`);
     let cella = document.getElementsByClassName("ris")[i];
+
     cella.innerText = p.risultato;
 
-    if(scelto && scelto.value === p.risultato){
+    if (scelto && scelto.value === p.risultato) {
       punti++;
-      cella.style.background="#b7f7b7";
+      cella.style.background = "#b7f7b7";
     } else {
-      cella.style.background="#f7b7b7";
+      cella.style.background = "#f7b7b7";
     }
   });
 
@@ -107,8 +158,13 @@ function gioca(){
   localStorage.setItem(puntiKey, tot + punti);
 
   document.getElementById("esito").innerText =
-    "Punti giornata: "+punti;
+    "✅ Punti giornata: " + punti;
 }
+
+/* ==========================
+   AVVIO
+========================== */
+caricaPartite();
 </script>
 
 </body>
