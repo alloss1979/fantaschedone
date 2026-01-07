@@ -8,11 +8,9 @@
 <body>
 
 <div class="card">
-
   <h2>⚽ Fantaschedone</h2>
 
   <p id="utente"></p>
-  <p id="crediti"></p>
   <p id="info"></p>
 
   <table>
@@ -25,95 +23,90 @@
       </tr>
     </thead>
     <tbody id="tabella">
-      <tr><td colspan="4">Caricamento partite...</td></tr>
+      <tr><td colspan="4">⏳ Caricamento partite...</td></tr>
     </tbody>
   </table>
 
   <br>
-  <button id="btnGioca" onclick="gioca()">Invia schedina</button>
+  <button onclick="gioca()">Invia schedina</button>
 
   <h3 id="esito"></h3>
-
 </div>
 
 <script>
-/* ==========================
-   CONTROLLO LOGIN
-========================== */
-let utente = localStorage.getItem("utente");
-if (!utente) {
-  location.href = "login.html";
-}
+/* ======================
+   CONFIG
+====================== */
+const API_KEY = "40e94a409232598ba1cfd36efe3ad91d";
 
+/* ⚠️ DATA SICURA CON SERIE A */
+const DATA_PARTITE = "2025-09-21";
+
+/* STAGIONE CORRETTA */
+const STAGIONE = 2024;
+
+/* ======================
+   UTENTE
+====================== */
+let utente = localStorage.getItem("utente") || "demo";
+localStorage.setItem("utente", utente);
 document.getElementById("utente").innerText = "👤 Utente: " + utente;
-
-let creditiKey = "crediti_" + utente;
-let puntiKey   = "punti_" + utente;
-
-if (!localStorage.getItem(creditiKey)) {
-  localStorage.setItem(creditiKey, 100);
-}
-
-document.getElementById("crediti").innerText =
-  "💰 Crediti: " + localStorage.getItem(creditiKey);
-
-/* ==========================
-   CONFIGURAZIONE GIORNATA
-========================== */
-const BLOCCO_GIORNATA = "2026-01-10T15:00"; // ORA BLOCCO
-const DATA_PARTITE   = "2025-09-21";       // DATA API
-const API_KEY = "40e94a409232598ba1cfd36efe3ad91d"; // API-Football
 
 let partite = [];
 
-/* ==========================
-   CARICAMENTO PARTITE REALI
-========================== */
+/* ======================
+   CARICA PARTITE REALI
+====================== */
 async function caricaPartite() {
 
-  const url = `https://v3.football.api-sports.io/fixtures?league=135&season=2024&date=${DATA_PARTITE}`;
+  const url = `https://v3.football.api-sports.io/fixtures?league=135&season=${STAGIONE}&date=${DATA_PARTITE}`;
 
-  const r = await fetch(url, {
-    headers: { "x-apisports-key": API_KEY }
-  });
+  try {
+    const r = await fetch(url, {
+      headers: { "x-apisports-key": API_KEY }
+    });
 
-  const json = await r.json();
+    const json = await r.json();
 
-  partite = json.response.map(f => {
-    let g1 = f.goals.home;
-    let g2 = f.goals.away;
+    console.log("RISPOSTA API:", json);
 
-    let segno = "-";
-    if (g1 !== null) {
-      if (g1 > g2) segno = "1";
-      else if (g1 < g2) segno = "2";
-      else segno = "X";
+    if (!json.response || json.response.length === 0) {
+      document.getElementById("tabella").innerHTML =
+        "<tr><td colspan='4'>❌ Nessuna partita trovata</td></tr>";
+      return;
     }
 
-    return {
-      casa: f.teams.home.name,
-      trasferta: f.teams.away.name,
-      risultato: segno
-    };
-  });
+    partite = json.response.map(f => {
+      let g1 = f.goals.home;
+      let g2 = f.goals.away;
 
-  disegnaTabella();
+      let segno = "-";
+      if (g1 !== null) {
+        if (g1 > g2) segno = "1";
+        else if (g1 < g2) segno = "2";
+        else segno = "X";
+      }
+
+      return {
+        casa: f.teams.home.name,
+        trasferta: f.teams.away.name,
+        risultato: segno
+      };
+    });
+
+    disegna();
+
+  } catch (e) {
+    console.error("ERRORE API:", e);
+    document.getElementById("tabella").innerHTML =
+      "<tr><td colspan='4'>❌ Errore API (vedi console)</td></tr>";
+  }
 }
 
-/* ==========================
+/* ======================
    DISEGNA TABELLA
-========================== */
-function disegnaTabella() {
-
-  let ora = new Date();
-  let blocco = new Date(BLOCCO_GIORNATA);
-  let chiusa = ora >= blocco;
-
-  document.getElementById("info").innerText =
-    chiusa ? "⛔ Giornata chiusa" : "⏰ Blocco: " + blocco.toLocaleString();
-
-  document.getElementById("btnGioca").disabled = chiusa;
-
+====================== */
+function disegna() {
   let h = "";
   partite.forEach((p, i) => {
     h += `
@@ -125,45 +118,31 @@ function disegnaTabella() {
           <input type="radio" name="p${i}" value="X">X
           <input type="radio" name="p${i}" value="2">2
         </td>
-        <td class="ris">-</td>
+        <td>${p.risultato}</td>
       </tr>
     `;
   });
-
   document.getElementById("tabella").innerHTML = h;
 }
 
-/* ==========================
-   INVIO SCHEDINA
-========================== */
+/* ======================
+   CALCOLO PUNTI
+====================== */
 function gioca() {
-
   let punti = 0;
 
   partite.forEach((p, i) => {
-    let scelto = document.querySelector(`input[name="p${i}"]:checked`);
-    let cella = document.getElementsByClassName("ris")[i];
-
-    cella.innerText = p.risultato;
-
-    if (scelto && scelto.value === p.risultato) {
-      punti++;
-      cella.style.background = "#b7f7b7";
-    } else {
-      cella.style.background = "#f7b7b7";
-    }
+    let s = document.querySelector(`input[name="p${i}"]:checked`);
+    if (s && s.value === p.risultato) punti++;
   });
 
-  let tot = parseInt(localStorage.getItem(puntiKey) || 0);
-  localStorage.setItem(puntiKey, tot + punti);
-
   document.getElementById("esito").innerText =
-    "✅ Punti giornata: " + punti;
+    "✅ Punti: " + punti;
 }
 
-/* ==========================
+/* ======================
    AVVIO
-========================== */
+====================== */
 caricaPartite();
 </script>
 
