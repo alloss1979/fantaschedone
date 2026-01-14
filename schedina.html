@@ -7,98 +7,90 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      background: #f4f6f8;
+      margin: 0;
       padding: 20px;
     }
 
-    .container {
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-    }
-
-    h2 {
+    h1 {
       text-align: center;
     }
 
     table {
       width: 100%;
+      max-width: 900px;
+      margin: auto;
       border-collapse: collapse;
-      margin-top: 20px;
+      background: white;
     }
 
     th, td {
+      border: 1px solid #ccc;
       padding: 10px;
-      border-bottom: 1px solid #ccc;
       text-align: center;
     }
 
-    .pronostico input {
-      margin: 0 5px;
+    th {
+      background: #2c7be5;
+      color: white;
     }
 
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
+    .pronostici input {
+      margin: 0 5px;
+      transform: scale(1.3);
+    }
+
+    #gioca {
+      display: block;
+      margin: 20px auto;
+      padding: 12px 30px;
+      font-size: 18px;
+      background: #28a745;
+      color: white;
+      border: none;
       cursor: pointer;
     }
 
-    .ok {
-      color: green;
-      font-weight: bold;
+    #gioca:hover {
+      background: #218838;
     }
 
-    .ko {
-      color: red;
+    #stato {
+      text-align: center;
+      margin-top: 15px;
       font-weight: bold;
     }
   </style>
 </head>
+
 <body>
 
-<div class="container">
+<h1>⚽ Fantaschedone – Schedina</h1>
 
-  <h2>⚽ Fantaschedone – Schedina</h2>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Partita</th>
+      <th>Pronostico</th>
+    </tr>
+  </thead>
+  <tbody id="tabella">
+    <tr>
+      <td colspan="3">⏳ Caricamento partite…</td>
+    </tr>
+  </tbody>
+</table>
 
-  <p id="utente"></p>
+<button id="gioca">Gioca schedina</button>
 
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Partita</th>
-        <th>Pronostico</th>
-        <th>Risultato</th>
-      </tr>
-    </thead>
-    <tbody id="lista">
-      <tr>
-        <td colspan="4">⏳ Caricamento partite...</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <button onclick="gioca()">Invia schedina</button>
-
-  <h3 id="esito"></h3>
-
-</div>
+<div id="stato"></div>
 
 <script>
 /* =========================
    CONFIG
 ========================= */
-const WORKER_URL = https://fantaschedone-api.alloss1979.workers.dev/
-
-/* =========================
-   UTENTE (DEMO)
-========================= */
-let utente = localStorage.getItem("utente") || "demo";
-localStorage.setItem("utente", utente);
-document.getElementById("utente").innerText = "👤 Utente: " + utente;
+const WORKER_URL = "https://fantaschedone-api.alloss1979.workers.dev";
 
 /* =========================
    VARIABILI
@@ -106,82 +98,70 @@ document.getElementById("utente").innerText = "👤 Utente: " + utente;
 let partite = [];
 
 /* =========================
-   CARICA PARTITE REALI
+   CARICA PARTITE
 ========================= */
 async function caricaPartite() {
   try {
-    const r = await fetch(WORKER_URL);
-    const json = await r.json();
+    const res = await fetch(WORKER_URL);
+    const data = await res.json();
 
-    if (!json.response || json.response.length === 0) {
-      document.getElementById("lista").innerHTML =
-        "<tr><td colspan='4'>❌ Nessuna partita trovata</td></tr>";
+    console.log("DATI RICEVUTI:", data);
+
+    if (!data.response || data.response.length === 0) {
+      document.getElementById("tabella").innerHTML =
+        "<tr><td colspan='3'>❌ Nessuna partita trovata</td></tr>";
       return;
     }
 
-    partite = json.response.slice(0, 13).map(f => {
-      let segno = "-";
-      if (f.goals.home !== null) {
-        if (f.goals.home > f.goals.away) segno = "1";
-        else if (f.goals.home < f.goals.away) segno = "2";
-        else segno = "X";
-      }
+    partite = data.response.slice(0, 13);
 
-      return {
-        casa: f.teams.home.name,
-        trasferta: f.teams.away.name,
-        risultato: segno
-      };
-    });
+    disegnaPartite();
 
-    disegna();
-
-  } catch (e) {
-    document.getElementById("lista").innerHTML =
-      "<tr><td colspan='4'>❌ Errore di caricamento</td></tr>";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("tabella").innerHTML =
+      "<tr><td colspan='3'>❌ Errore caricamento</td></tr>";
   }
 }
 
 /* =========================
    DISEGNA TABELLA
 ========================= */
-function disegna() {
+function disegnaPartite() {
   let html = "";
 
   partite.forEach((p, i) => {
     html += `
       <tr>
         <td>${i + 1}</td>
-        <td>${p.casa} - ${p.trasferta}</td>
-        <td class="pronostico">
-          <input type="radio" name="p${i}" value="1">1
-          <input type="radio" name="p${i}" value="X">X
-          <input type="radio" name="p${i}" value="2">2
+        <td>${p.teams.home.name} - ${p.teams.away.name}</td>
+        <td class="pronostici">
+          <label><input type="radio" name="p${i}" value="1"> 1</label>
+          <label><input type="radio" name="p${i}" value="X"> X</label>
+          <label><input type="radio" name="p${i}" value="2"> 2</label>
         </td>
-        <td>${p.risultato}</td>
       </tr>
     `;
   });
 
-  document.getElementById("lista").innerHTML = html;
+  document.getElementById("tabella").innerHTML = html;
 }
 
 /* =========================
-   CALCOLO PUNTEGGIO
+   GIOCA
 ========================= */
-function gioca() {
-  let punti = 0;
+document.getElementById("gioca").onclick = () => {
+  let scelti = 0;
 
-  partite.forEach((p, i) => {
-    const scelta = document.querySelector(`input[name="p${i}"]:checked`);
-    if (scelta && scelta.value === p.risultato) {
-      punti++;
+  partite.forEach((_, i) => {
+    if (document.querySelector(`input[name="p${i}"]:checked`)) {
+      scelti++;
     }
   });
 
-  document.getElementById("esito").innerText =
-    "✅ Punti ottenuti: " + punti;
-}
+  document.getElementById("stato").innerText =
+    `✅ Pronostici selezionati: ${scelti} / ${partite.length}`;
+};
 
 /* =========================
    AVVIO
