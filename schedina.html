@@ -3,15 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <title>Fantaschedone – Schedina</title>
-  <link rel="stylesheet" href="css/stile.css">
+  <style>
+    body {
+      font-family: Arial;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    .card {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    .segni input {
+      margin: 0 5px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
 
 <div class="card">
-  <h2>⚽ Fantaschedone</h2>
-
+  <h2>⚽ Fantaschedone – Schedina</h2>
   <p id="utente"></p>
-  <p id="info"></p>
 
   <table>
     <thead>
@@ -23,43 +50,41 @@
       </tr>
     </thead>
     <tbody id="tabella">
-      <tr><td colspan="4">⏳ Caricamento partite...</td></tr>
+      <tr><td colspan="4">⏳ Caricamento partite reali...</td></tr>
     </tbody>
   </table>
 
   <br>
   <button onclick="gioca()">Invia schedina</button>
-
   <h3 id="esito"></h3>
 </div>
 
 <script>
-/* ======================
-   CONFIG
-====================== */
+/* =========================
+   CONFIG API
+========================= */
 const API_KEY = "40e94a409232598ba1cfd36efe3ad91d";
+const LEAGUE = 135; // Serie A
+const SEASON = 2024;
 
-/* ⚠️ DATA SICURA CON SERIE A */
-const DATA_PARTITE = "2025-09-21";
+/* DATA ODIERNA (REALE) */
+const today = new Date().toISOString().split("T")[0];
 
-/* STAGIONE CORRETTA */
-const STAGIONE = 2025;
-
-/* ======================
+/* =========================
    UTENTE
-====================== */
+========================= */
 let utente = localStorage.getItem("utente") || "demo";
 localStorage.setItem("utente", utente);
 document.getElementById("utente").innerText = "👤 Utente: " + utente;
 
 let partite = [];
 
-/* ======================
+/* =========================
    CARICA PARTITE REALI
-====================== */
+========================= */
 async function caricaPartite() {
 
-  const url = `https://v3.football.api-sports.io/fixtures?league=135&season=${STAGIONE}&date=${DATA_PARTITE}`;
+  const url = `https://v3.football.api-sports.io/fixtures?league=${LEAGUE}&season=${SEASON}&date=${today}`;
 
   try {
     const r = await fetch(url, {
@@ -67,26 +92,21 @@ async function caricaPartite() {
     });
 
     const json = await r.json();
-
-    console.log("RISPOSTA API:", json);
+    console.log(json);
 
     if (!json.response || json.response.length === 0) {
       document.getElementById("tabella").innerHTML =
-        "<tr><td colspan='4'>❌ Nessuna partita trovata</td></tr>";
+        "<tr><td colspan='4'>❌ Nessuna partita oggi</td></tr>";
       return;
     }
 
-    partite = json.response.map(f => {
-      let g1 = f.goals.home;
-      let g2 = f.goals.away;
-
+    partite = json.response.slice(0, 13).map(f => {
       let segno = "-";
-      if (g1 !== null) {
-        if (g1 > g2) segno = "1";
-        else if (g1 < g2) segno = "2";
+      if (f.goals.home !== null) {
+        if (f.goals.home > f.goals.away) segno = "1";
+        else if (f.goals.home < f.goals.away) segno = "2";
         else segno = "X";
       }
-
       return {
         casa: f.teams.home.name,
         trasferta: f.teams.away.name,
@@ -97,15 +117,14 @@ async function caricaPartite() {
     disegna();
 
   } catch (e) {
-    console.error("ERRORE API:", e);
     document.getElementById("tabella").innerHTML =
-      "<tr><td colspan='4'>❌ Errore API (vedi console)</td></tr>";
+      "<tr><td colspan='4'>❌ Errore API</td></tr>";
   }
 }
 
-/* ======================
+/* =========================
    DISEGNA TABELLA
-====================== */
+========================= */
 function disegna() {
   let h = "";
   partite.forEach((p, i) => {
@@ -113,7 +132,7 @@ function disegna() {
       <tr>
         <td>${i + 1}</td>
         <td>${p.casa} - ${p.trasferta}</td>
-        <td>
+        <td class="segni">
           <input type="radio" name="p${i}" value="1">1
           <input type="radio" name="p${i}" value="X">X
           <input type="radio" name="p${i}" value="2">2
@@ -125,24 +144,20 @@ function disegna() {
   document.getElementById("tabella").innerHTML = h;
 }
 
-/* ======================
+/* =========================
    CALCOLO PUNTI
-====================== */
+========================= */
 function gioca() {
   let punti = 0;
-
   partite.forEach((p, i) => {
     let s = document.querySelector(`input[name="p${i}"]:checked`);
     if (s && s.value === p.risultato) punti++;
   });
-
   document.getElementById("esito").innerText =
-    "✅ Punti: " + punti;
+    "✅ Punti ottenuti: " + punti;
 }
 
-/* ======================
-   AVVIO
-====================== */
+/* AVVIO */
 caricaPartite();
 </script>
 
