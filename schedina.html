@@ -2,15 +2,15 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Fantaschedone – Schedina</title>
+  <title>Fantaschedone</title>
   <style>
     body {
       font-family: Arial;
       background: #f2f2f2;
       padding: 20px;
     }
-    .card {
-      max-width: 900px;
+    .box {
+      max-width: 800px;
       margin: auto;
       background: white;
       padding: 20px;
@@ -20,71 +20,38 @@
       width: 100%;
       border-collapse: collapse;
     }
-    th, td {
+    td, th {
       padding: 10px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #ccc;
       text-align: center;
-    }
-    .segni input {
-      margin: 0 5px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
     }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>⚽ Fantaschedone – Schedina</h2>
-  <p id="utente"></p>
+<div class="box">
+  <h2>⚽ Fantaschedone – Prossime partite Serie A</h2>
 
   <table>
     <thead>
       <tr>
         <th>#</th>
         <th>Partita</th>
-        <th>Pronostico</th>
-        <th>Risultato</th>
+        <th>Data</th>
       </tr>
     </thead>
-    <tbody id="tabella">
-      <tr><td colspan="4">⏳ Caricamento partite reali...</td></tr>
+    <tbody id="lista">
+      <tr><td colspan="3">⏳ Caricamento...</td></tr>
     </tbody>
   </table>
-
-  <br>
-  <button onclick="gioca()">Invia schedina</button>
-  <h3 id="esito"></h3>
 </div>
 
 <script>
-/* =========================
-   CONFIG API
-========================= */
 const API_KEY = "40e94a409232598ba1cfd36efe3ad91d";
-const LEAGUE = 135; // Serie A
-const SEASON = 2024;
 
-/* DATA ODIERNA (REALE) */
-const today = new Date().toISOString().split("T")[0];
+async function carica() {
 
-/* =========================
-   UTENTE
-========================= */
-let utente = localStorage.getItem("utente") || "demo";
-localStorage.setItem("utente", utente);
-document.getElementById("utente").innerText = "👤 Utente: " + utente;
-
-let partite = [];
-
-/* =========================
-   CARICA PARTITE REALI
-========================= */
-async function caricaPartite() {
-
-  const url = `https://v3.football.api-sports.io/fixtures?league=${LEAGUE}&season=${SEASON}&date=${today}`;
+  const url = "https://v3.football.api-sports.io/fixtures?league=135&season=2024&next=10";
 
   try {
     const r = await fetch(url, {
@@ -94,71 +61,27 @@ async function caricaPartite() {
     const json = await r.json();
     console.log(json);
 
-    if (!json.response || json.response.length === 0) {
-      document.getElementById("tabella").innerHTML =
-        "<tr><td colspan='4'>❌ Nessuna partita oggi</td></tr>";
-      return;
-    }
+    const tbody = document.getElementById("lista");
+    tbody.innerHTML = "";
 
-    partite = json.response.slice(0, 13).map(f => {
-      let segno = "-";
-      if (f.goals.home !== null) {
-        if (f.goals.home > f.goals.away) segno = "1";
-        else if (f.goals.home < f.goals.away) segno = "2";
-        else segno = "X";
-      }
-      return {
-        casa: f.teams.home.name,
-        trasferta: f.teams.away.name,
-        risultato: segno
-      };
+    json.response.forEach((f, i) => {
+      const data = new Date(f.fixture.date).toLocaleString();
+      tbody.innerHTML += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${f.teams.home.name} - ${f.teams.away.name}</td>
+          <td>${data}</td>
+        </tr>
+      `;
     });
 
-    disegna();
-
   } catch (e) {
-    document.getElementById("tabella").innerHTML =
-      "<tr><td colspan='4'>❌ Errore API</td></tr>";
+    document.getElementById("lista").innerHTML =
+      "<tr><td colspan='3'>❌ Errore API</td></tr>";
   }
 }
 
-/* =========================
-   DISEGNA TABELLA
-========================= */
-function disegna() {
-  let h = "";
-  partite.forEach((p, i) => {
-    h += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${p.casa} - ${p.trasferta}</td>
-        <td class="segni">
-          <input type="radio" name="p${i}" value="1">1
-          <input type="radio" name="p${i}" value="X">X
-          <input type="radio" name="p${i}" value="2">2
-        </td>
-        <td>${p.risultato}</td>
-      </tr>
-    `;
-  });
-  document.getElementById("tabella").innerHTML = h;
-}
-
-/* =========================
-   CALCOLO PUNTI
-========================= */
-function gioca() {
-  let punti = 0;
-  partite.forEach((p, i) => {
-    let s = document.querySelector(`input[name="p${i}"]:checked`);
-    if (s && s.value === p.risultato) punti++;
-  });
-  document.getElementById("esito").innerText =
-    "✅ Punti ottenuti: " + punti;
-}
-
-/* AVVIO */
-caricaPartite();
+carica();
 </script>
 
 </body>
