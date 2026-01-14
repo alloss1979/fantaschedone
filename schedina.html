@@ -2,86 +2,191 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Fantaschedone</title>
+  <title>Fantaschedone – Schedina</title>
+
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #f2f2f2;
       padding: 20px;
     }
-    .box {
-      max-width: 800px;
+
+    .container {
+      max-width: 900px;
       margin: auto;
       background: white;
       padding: 20px;
       border-radius: 10px;
     }
+
+    h2 {
+      text-align: center;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 20px;
     }
-    td, th {
+
+    th, td {
       padding: 10px;
       border-bottom: 1px solid #ccc;
       text-align: center;
+    }
+
+    .pronostico input {
+      margin: 0 5px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .ok {
+      color: green;
+      font-weight: bold;
+    }
+
+    .ko {
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-<div class="box">
-  <h2>⚽ Fantaschedone – Prossime partite Serie A</h2>
+<div class="container">
+
+  <h2>⚽ Fantaschedone – Schedina</h2>
+
+  <p id="utente"></p>
 
   <table>
     <thead>
       <tr>
         <th>#</th>
         <th>Partita</th>
-        <th>Data</th>
+        <th>Pronostico</th>
+        <th>Risultato</th>
       </tr>
     </thead>
     <tbody id="lista">
-      <tr><td colspan="3">⏳ Caricamento...</td></tr>
+      <tr>
+        <td colspan="4">⏳ Caricamento partite...</td>
+      </tr>
     </tbody>
   </table>
+
+  <button onclick="gioca()">Invia schedina</button>
+
+  <h3 id="esito"></h3>
+
 </div>
 
 <script>
-const API_KEY = "40e94a409232598ba1cfd36efe3ad91d";
+/* =========================
+   CONFIG
+========================= */
+const WORKER_URL = https://fantaschedone-api.alloss1979.workers.dev/
 
-async function carica() {
+/* =========================
+   UTENTE (DEMO)
+========================= */
+let utente = localStorage.getItem("utente") || "demo";
+localStorage.setItem("utente", utente);
+document.getElementById("utente").innerText = "👤 Utente: " + utente;
 
-  const url = "https://v3.football.api-sports.io/fixtures?league=135&season=2024&next=10";
+/* =========================
+   VARIABILI
+========================= */
+let partite = [];
 
+/* =========================
+   CARICA PARTITE REALI
+========================= */
+async function caricaPartite() {
   try {
-    const r = await fetch(url, {
-      headers: { "x-apisports-key": API_KEY }
-    });
-
+    const r = await fetch(WORKER_URL);
     const json = await r.json();
-    console.log(json);
 
-    const tbody = document.getElementById("lista");
-    tbody.innerHTML = "";
+    if (!json.response || json.response.length === 0) {
+      document.getElementById("lista").innerHTML =
+        "<tr><td colspan='4'>❌ Nessuna partita trovata</td></tr>";
+      return;
+    }
 
-    json.response.forEach((f, i) => {
-      const data = new Date(f.fixture.date).toLocaleString();
-      tbody.innerHTML += `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${f.teams.home.name} - ${f.teams.away.name}</td>
-          <td>${data}</td>
-        </tr>
-      `;
+    partite = json.response.slice(0, 13).map(f => {
+      let segno = "-";
+      if (f.goals.home !== null) {
+        if (f.goals.home > f.goals.away) segno = "1";
+        else if (f.goals.home < f.goals.away) segno = "2";
+        else segno = "X";
+      }
+
+      return {
+        casa: f.teams.home.name,
+        trasferta: f.teams.away.name,
+        risultato: segno
+      };
     });
+
+    disegna();
 
   } catch (e) {
     document.getElementById("lista").innerHTML =
-      "<tr><td colspan='3'>❌ Errore API</td></tr>";
+      "<tr><td colspan='4'>❌ Errore di caricamento</td></tr>";
   }
 }
 
-carica();
+/* =========================
+   DISEGNA TABELLA
+========================= */
+function disegna() {
+  let html = "";
+
+  partite.forEach((p, i) => {
+    html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${p.casa} - ${p.trasferta}</td>
+        <td class="pronostico">
+          <input type="radio" name="p${i}" value="1">1
+          <input type="radio" name="p${i}" value="X">X
+          <input type="radio" name="p${i}" value="2">2
+        </td>
+        <td>${p.risultato}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("lista").innerHTML = html;
+}
+
+/* =========================
+   CALCOLO PUNTEGGIO
+========================= */
+function gioca() {
+  let punti = 0;
+
+  partite.forEach((p, i) => {
+    const scelta = document.querySelector(`input[name="p${i}"]:checked`);
+    if (scelta && scelta.value === p.risultato) {
+      punti++;
+    }
+  });
+
+  document.getElementById("esito").innerText =
+    "✅ Punti ottenuti: " + punti;
+}
+
+/* =========================
+   AVVIO
+========================= */
+caricaPartite();
 </script>
 
 </body>
