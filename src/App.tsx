@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 // @ts-ignore
 import { supabase } from './supabaseClient';
-import Login from './Login';
+import login from './Login';
 import './App.css'; 
 
 function App() {
