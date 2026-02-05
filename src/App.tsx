@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // @ts-ignore
 import { supabase } from './supabaseClient';
 import Login from './login.tsx';
-import './App.css'; 
+import './App.css';  
 
 function App() {
   const [session, setSession] = useState<any>(null);
