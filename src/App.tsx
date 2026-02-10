@@ -12,6 +12,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [userBets, setUserBets] = useState<any[]>([]);
   const [classifica, setClassifica] = useState<any[]>([]);
+  
+  // NUOVO: Stato per gestire la giornata selezionata
+  const [giornata, setGiornata] = useState(24);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }: any) => {
@@ -38,7 +41,6 @@ function App() {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    // Calcolo punti con normalizzazione trim()
     const betsConPunti = data?.map((bet: any) => {
       let punti = 0;
       bet.predictions.forEach((p: any) => {
@@ -102,21 +104,30 @@ function App() {
     } catch (err: any) { alert("Errore: " + err.message); } finally { setLoading(false); }
   };
 
+  // EFFETTO MODIFICATO: Ricarica i match quando cambia la giornata
   useEffect(() => {
     if (session) {
       const fetchData = async () => {
         setLoading(true);
         const { data: prof } = await supabase.from('profiles').select('nickname, credits').eq('id', session.user.id).single();
         if (prof) setProfile(prof);
-        const { data: mtch } = await supabase.from('matches').select('*').order('api_id').limit(13);
+        
+        // FILTRO AGGIUNTO: Carichiamo solo i match della giornata selezionata
+        const { data: mtch } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('matchday', giornata) 
+          .order('api_id');
+          
         if (mtch) setMatches(mtch);
+        
         await caricaStorico(session.user.id);
         await caricaClassifica();
         setLoading(false);
       };
       fetchData();
     }
-  }, [session]);
+  }, [session, giornata]); // 'giornata' aggiunto qui per far scattare l'aggiornamento
 
   const selezionaSegno = (id: string, segno: string) => {
     setPronostici(prev => ({ ...prev, [id]: prev[id] === segno ? '' : segno }));
@@ -124,13 +135,8 @@ function App() {
 
   const inviaSchedina = async () => {
     if (!profile || profile.credits < 5) return alert("Crediti insufficienti!");
-    if (Object.values(pronostici).filter(v => v !== '').length < 13) return alert("Compila tutte le 13 partite!");
-
-    if (userBets.length > 0 && matches.length > 0) {
-      const lastMatchId = matches[matches.length - 1].id;
-      const giaGiocata = userBets.some(bet => bet.predictions.some((p: any) => p.match_id === lastMatchId));
-      if (giaGiocata) return alert("Hai già giocato per questa giornata!");
-    }
+    // Controllo basato sul numero effettivo di match caricati per quella giornata
+    if (Object.values(pronostici).filter(v => v !== '').length < matches.length) return alert(`Compila tutte le ${matches.length} partite!`);
 
     setLoading(true);
     try {
@@ -180,8 +186,32 @@ function App() {
         ))}
       </div>
 
-      <h3 className="section-title">La Schedina dei 13</h3>
-      {matches.map((m, i) => (
+      {/* NUOVO: Pulsanti per cambiare giornata */}
+      <h3 className="section-title">Scegli Giornata</h3>
+      <div className="tabs-giornate" style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '10px' }}>
+        {[24, 25, 26].map(n => (
+          <button 
+            key={n} 
+            onClick={() => { setGiornata(n); setPronostici({}); }}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: giornata === n ? '#007bff' : '#333',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            G{n}
+          </button>
+        ))}
+      </div>
+
+      <h3 className="section-title">La Schedina Giornata {giornata}</h3>
+      {matches.length === 0 ? (
+        <div className="card" style={{color: 'white', textAlign: 'center'}}>Nessuna partita caricata per questa giornata.</div>
+      ) : matches.map((m, i) => (
         <div key={m.id} className="card-match">
           <div className="match-info-row">
             <span className="match-number">{i + 1}</span>
