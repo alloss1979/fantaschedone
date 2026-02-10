@@ -13,7 +13,7 @@ function App() {
   const [userBets, setUserBets] = useState<any[]>([]);
   const [classifica, setClassifica] = useState<any[]>([]);
   
-  // NUOVO: Stato per gestire la giornata selezionata
+  // Stato per gestire la giornata selezionata (Partiamo dalla 24)
   const [giornata, setGiornata] = useState(24);
 
   useEffect(() => {
@@ -84,14 +84,21 @@ function App() {
     setClassifica(classificaOrdinata);
   };
 
+  // FUNZIONE SMART: Invia la giornata selezionata alla Edge Function
   const syncMatches = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('get-matches');
+      const { data, error } = await supabase.functions.invoke('get-matches', {
+        body: { matchday: giornata } 
+      });
       if (error) throw error;
-      alert("✅ " + (data?.message || "Palinsesto aggiornato!"));
+      alert(`✅ Palinsesto Giornata ${giornata} aggiornato correttamente!`);
       window.location.reload();
-    } catch (err: any) { alert("Errore: " + err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      alert("Errore: " + err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const recuperaRisultati = async () => {
@@ -99,12 +106,11 @@ function App() {
     try {
       const { data, error } = await supabase.functions.invoke('update-results');
       if (error) throw error;
-      alert("🏆 " + (data?.message || "Risultati aggiornati!"));
+      alert("🏆 Risultati aggiornati!");
       window.location.reload();
     } catch (err: any) { alert("Errore: " + err.message); } finally { setLoading(false); }
   };
 
-  // EFFETTO MODIFICATO: Ricarica i match quando cambia la giornata
   useEffect(() => {
     if (session) {
       const fetchData = async () => {
@@ -112,7 +118,7 @@ function App() {
         const { data: prof } = await supabase.from('profiles').select('nickname, credits').eq('id', session.user.id).single();
         if (prof) setProfile(prof);
         
-        // FILTRO AGGIUNTO: Carichiamo solo i match della giornata selezionata
+        // Filtra i match nel database in base alla giornata selezionata
         const { data: mtch } = await supabase
           .from('matches')
           .select('*')
@@ -127,7 +133,7 @@ function App() {
       };
       fetchData();
     }
-  }, [session, giornata]); // 'giornata' aggiunto qui per far scattare l'aggiornamento
+  }, [session, giornata]);
 
   const selezionaSegno = (id: string, segno: string) => {
     setPronostici(prev => ({ ...prev, [id]: prev[id] === segno ? '' : segno }));
@@ -135,8 +141,9 @@ function App() {
 
   const inviaSchedina = async () => {
     if (!profile || profile.credits < 5) return alert("Crediti insufficienti!");
-    // Controllo basato sul numero effettivo di match caricati per quella giornata
-    if (Object.values(pronostici).filter(v => v !== '').length < matches.length) return alert(`Compila tutte le ${matches.length} partite!`);
+    if (Object.values(pronostici).filter(v => v !== '').length < matches.length) {
+       return alert(`Devi compilare tutte le ${matches.length} partite della giornata!`);
+    }
 
     setLoading(true);
     try {
@@ -170,8 +177,8 @@ function App() {
         <button className="btn-logout" onClick={() => supabase.auth.signOut()}>Esci</button>
         {session.user.email === 'alloss1979@gmail.com' && (
           <div className="admin-controls">
-            <span onClick={syncMatches} className="admin-link blue">🔄 PALINSESTO</span>
-            <span onClick={recuperaRisultati} className="admin-link gold">🏆 RISULTATI</span>
+            <span onClick={syncMatches} className="admin-link blue">🔄 SCARICA G{giornata}</span>
+            <span onClick={recuperaRisultati} className="admin-link gold">🏆 AGGIORNA RISULTATI</span>
           </div>
         )}
       </div>
@@ -186,21 +193,21 @@ function App() {
         ))}
       </div>
 
-      {/* NUOVO: Pulsanti per cambiare giornata */}
-      <h3 className="section-title">Scegli Giornata</h3>
-      <div className="tabs-giornate" style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '10px' }}>
-        {[24, 25, 26].map(n => (
+      <h3 className="section-title">Seleziona Giornata</h3>
+      <div className="tabs-giornate" style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', padding: '10px 0' }}>
+        {[24, 25, 26, 27, 28].map(n => (
           <button 
             key={n} 
             onClick={() => { setGiornata(n); setPronostici({}); }}
             style={{
-              padding: '10px 20px',
-              borderRadius: '20px',
+              padding: '10px 15px',
+              borderRadius: '12px',
               border: 'none',
-              backgroundColor: giornata === n ? '#007bff' : '#333',
+              backgroundColor: giornata === n ? '#007bff' : '#2a2a2a',
               color: 'white',
               cursor: 'pointer',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              minWidth: '60px'
             }}
           >
             G{n}
@@ -208,9 +215,12 @@ function App() {
         ))}
       </div>
 
-      <h3 className="section-title">La Schedina Giornata {giornata}</h3>
+      <h3 className="section-title">Schedina Giornata {giornata}</h3>
       {matches.length === 0 ? (
-        <div className="card" style={{color: 'white', textAlign: 'center'}}>Nessuna partita caricata per questa giornata.</div>
+        <div className="card" style={{color: '#aaa', textAlign: 'center', padding: '40px 20px'}}>
+          Nessuna partita nel database per la Giornata {giornata}.<br/>
+          {session.user.email === 'alloss1979@gmail.com' && "Clicca su 'SCARICA' per recuperarle."}
+        </div>
       ) : matches.map((m, i) => (
         <div key={m.id} className="card-match">
           <div className="match-info-row">
@@ -231,7 +241,7 @@ function App() {
                 <div className="logo-box">
                   {m.away_logo ? (
                     <img src={m.away_logo} className="team-logo" alt="" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = `<div class="logo-fallback">${m.away_team.charAt(0)}</div>`; }} />
-                  ) : <div className="logo-fallback">{m.away_team?.charAt(0)}</div>}
+                  ) : <div className="logo-fallback">${m.away_team?.charAt(0)}</div>}
                 </div>
                 <span className="team-name">{m.away_team}</span>
               </div>
@@ -249,21 +259,21 @@ function App() {
               </button>
             ))}
           </div>
-          {m.result && <div className="result-label">Risultato: {m.result}</div>}
+          {m.result && <div className="result-label">Esito: {m.result}</div>}
         </div>
       ))}
 
       {matches.length > 0 && (
         <div className="footer-action">
           <button className="submit-button" onClick={inviaSchedina}>
-            INVIA SCHEDINA • 5 CR
+            CONFERMA GIOCATA • 5 CR
           </button>
         </div>
       )}
 
-      <h3 className="section-title">Le mie scommesse</h3>
+      <h3 className="section-title">Le mie giocate</h3>
       <div className="history-list">
-        {userBets.map((bet) => (
+        {userBets.length === 0 ? <div className="card" style={{color: '#777'}}>Non hai ancora giocato schedine.</div> : userBets.map((bet) => (
           <div key={bet.id} className="card history-card">
             <div className="history-header">
               <span className="date-badge">📅 {new Date(bet.created_at).toLocaleDateString()}</span>
